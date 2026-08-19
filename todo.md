@@ -84,6 +84,6 @@
 - [x] Deploy and confirm on the live domain that the corrected Telegram Login claim mapping completes successfully after approval.
 - [x] Audit public-release files for accidental secrets and deployment-sensitive material.
 - [x] Expand the README with a clear public installation, configuration, Telegram setup, and deployment guide.
-- [ ] Rename the GitHub repository to `GroupMemory-Telegram`, make it public, and push the finalized documentation.
-- [ ] Verify the public GitHub repository is accessible with the expected README and source history.
+- [x] Rename the GitHub repository to `GroupMemory-Telegram`, make it public, and push the finalized documentation.
+- [x] Verify the public GitHub repository is accessible with the expected README and source history.
 - [x] Remove the tracked production-log artifact from the public repository and prevent it from being recommitted.
