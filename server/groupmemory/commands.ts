@@ -22,6 +22,23 @@ function statusMessage(group: { memoryEnabled: boolean; retentionDays: number })
     `Memory: ${mode}`,
     `Retention: <b>${group.retentionDays} days</b>`,
     "Only messages recorded while memory is on are searchable.",
+    "Ask with <code>/ask your question</code>, search with <code>/search words</code>, or reply to a GroupMemory answer with a follow-up.",
+  ].join("\n");
+}
+
+export function formatCommandHelp() {
+  return [
+    "<b>GroupMemory guide</b>",
+    "",
+    "<b>Ask naturally</b>",
+    "• <code>/ask What did we decide about the event?</code>",
+    "• <code>/search React last week</code>",
+    "• Reply to any GroupMemory answer with your next question.",
+    "",
+    "<b>Admins</b>",
+    "• <code>/memory on</code> or <code>/memory off</code>",
+    "• <code>/retention 7d</code>, <code>/retention 30d</code>, or <code>/retention 90d</code>",
+    "• <code>/status</code> to check the group memory.",
   ].join("\n");
 }
 
@@ -32,7 +49,7 @@ export async function handleControlCommand(message: TelegramMessage, group: { id
   if (!message.from || !(await isTelegramGroupAdmin(message.chat.id, message.from.id))) {
     await sendTelegramHtmlMessage(
       message.chat.id,
-      "<b>GroupMemory</b>\nOnly a group administrator can change memory settings.",
+      "<b>Admin permission needed</b>\nOnly a group administrator can change memory settings. You can still use <code>/ask</code> and <code>/search</code>.",
       message.message_id,
     );
     return true;
@@ -40,14 +57,14 @@ export async function handleControlCommand(message: TelegramMessage, group: { id
 
   if (parsed.command === "memory") {
     if (parsed.argument !== "on" && parsed.argument !== "off") {
-      await sendTelegramHtmlMessage(message.chat.id, "Usage: <code>/memory on</code> or <code>/memory off</code>", message.message_id);
+      await sendTelegramHtmlMessage(message.chat.id, "<b>Choose a memory mode</b>\nUse <code>/memory on</code> to start recording, or <code>/memory off</code> to pause future recording.", message.message_id);
       return true;
     }
     const enabled = parsed.argument === "on";
     const updated = await setGroupMemoryEnabled(group.id, enabled);
     await sendTelegramHtmlMessage(
       message.chat.id,
-      enabled ? "<b>GroupMemory enabled.</b>\nNew group messages will be recorded and searchable." : "<b>GroupMemory paused.</b>\nExisting retained memory remains available until it expires.",
+      enabled ? "<b>Memory is on</b>\nNew group messages will be recorded and become searchable. Ask with <code>/ask</code> any time." : "<b>Memory is paused</b>\nNo new messages will be recorded. Existing retained memory remains available until it expires.",
       message.message_id,
     );
     group.memoryEnabled = updated?.memoryEnabled ?? enabled;
@@ -57,12 +74,12 @@ export async function handleControlCommand(message: TelegramMessage, group: { id
   if (parsed.command === "retention") {
     const allowed = new Set(["7d", "30d", "90d"]);
     if (!allowed.has(parsed.argument)) {
-      await sendTelegramHtmlMessage(message.chat.id, "Usage: <code>/retention 7d</code>, <code>/retention 30d</code>, or <code>/retention 90d</code>", message.message_id);
+      await sendTelegramHtmlMessage(message.chat.id, "<b>Choose a retention window</b>\nUse <code>/retention 7d</code>, <code>/retention 30d</code>, or <code>/retention 90d</code>. Older messages are deleted automatically.", message.message_id);
       return true;
     }
     const retentionDays = Number.parseInt(parsed.argument, 10);
     const updated = await setGroupRetentionDays(group.id, retentionDays);
-    await sendTelegramHtmlMessage(message.chat.id, `<b>Retention updated.</b>\nMessages are retained for <b>${retentionDays} days</b>.`, message.message_id);
+    await sendTelegramHtmlMessage(message.chat.id, `<b>Retention updated</b>\nMessages are kept for <b>${retentionDays} days</b>, then deleted automatically.`, message.message_id);
     group.retentionDays = updated?.retentionDays ?? retentionDays;
     return true;
   }

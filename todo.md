@@ -39,4 +39,14 @@
 - [x] Refine the mobile dashboard layout so the new setup controls remain easy to use.
 - [x] Reinstate strict owner-only dashboard authorization using the project owner identity.
 - [x] Add tests proving the project owner is allowed and a different admin is rejected.
-- [ ] Re-verify the live owner dashboard after restoring strict owner-only access.
+- [x] Re-verify the live owner dashboard after restoring strict owner-only access.
+- [x] Replace repetitive Telegram source lists with compact source access from each answer.
+- [x] Improve Telegram answer hierarchy, evidence labels, and human-readable source timestamps.
+- [x] Let a user reply to a GroupMemory answer with a follow-up question without needing `/ask`.
+- [x] Make `/start`, `/status`, memory controls, search, and error messages clearer and more informative.
+- [x] Add tests for concise answer formatting, compact source behavior, and reply-based follow-up questions.
+- [ ] Register Telegram callback-query updates after publishing the compact evidence button flow.
+- [x] Add output-shape tests for compact answers, source details, and callback-query handling.
+- [x] Replace repetitive Telegram source lists with compact source access from each answer.
+- [x] Improve Telegram answer hierarchy, evidence labels, and human-readable source timestamps.
+- [x] Add tests for concise answer formatting and source access behavior.

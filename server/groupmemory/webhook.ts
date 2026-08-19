@@ -1,15 +1,25 @@
 import { ensureTelegramGroup, hasStoredTelegramMessage, persistGroupMessage } from "../db";
 import { embedMemoryDocument } from "./ai";
-import { handleControlCommand, parseBotCommand } from "./commands";
+import { formatCommandHelp, handleControlCommand, parseBotCommand } from "./commands";
 import { extractMessageMetadata } from "./metadata";
-import { answerGroupQuestion, formatGroupSearch } from "./search";
-import { getTelegramBotUsername, isVerifiedTelegramWebhook, sendTelegramHtmlMessage } from "./telegram";
+import { answerGroupQuestion, buildSourceCallbackData, formatGroupSearch, formatSourceDetails, parseSourceCallbackData } from "./search";
+import { answerTelegramCallback, getTelegramBotUsername, isVerifiedTelegramWebhook, sendTelegramHtmlMessage } from "./telegram";
 import type { TelegramUpdate } from "./types";
 
-async function resolveUserQuery(message: NonNullable<TelegramUpdate["message"]>) {
+export async function resolveUserQuery(message: NonNullable<TelegramUpdate["message"]>) {
   const command = parseBotCommand(message.text);
   if (command?.command === "ask" && command.argument) return { kind: "ask" as const, question: command.argument };
   if (command?.command === "search" && command.argument) return { kind: "search" as const, question: command.argument };
+  const repliedBotText = message.reply_to_message?.text?.trim() ?? "";
+  const isGroupMemoryReply = message.reply_to_message?.from?.is_bot && /^(GroupMemory|Search complete|Evidence)/i.test(repliedBotText);
+  if (message.text?.trim() && isGroupMemoryReply) {
+    const priorAnswer = message.reply_to_message?.text?.slice(0, 900) ?? "";
+    return {
+      kind: "ask" as const,
+      question: message.text.trim(),
+      retrievalHint: `${message.text.trim()}\n\nFollow-up to a prior GroupMemory answer: ${priorAnswer}`,
+    };
+  }
   if (!message.text?.trim().startsWith("@")) return null;
   const username = await getTelegramBotUsername();
   const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -32,26 +42,41 @@ export function formatStartMessage(chatType: string) {
       "2. Add the bot as an admin in your group.",
       "3. In the group, send <code>/memory on</code>.",
       "",
-      "Then use <code>/ask What did we decide?</code> or <code>/search React</code> in that group.",
+      "Then use <code>/ask What did we decide?</code>, <code>/search React</code>, or reply to an answer with your next question.",
     ].join("\n");
   }
   return [
-    "<b>GroupMemory is ready.</b>",
+    "<b>GroupMemory is ready</b>",
     "An admin can start recording with <code>/memory on</code>.",
     "",
-    "<b>Admin controls</b>",
-    "<code>/retention 7d</code>, <code>/retention 30d</code>, <code>/retention 90d</code>, <code>/status</code>",
+    "Ask with <code>/ask your question</code>, search with <code>/search your words</code>, mention me with a question, or reply to any answer with a follow-up.",
     "",
-    "Ask with <code>/ask your question</code>, search with <code>/search your words</code>, or mention me with a question.",
+    "Use <code>/help</code> for the full command guide.",
   ].join("\n");
 }
 
 export async function processTelegramUpdate(update: TelegramUpdate) {
+  if (update.callback_query?.message) {
+    const sourceIds = parseSourceCallbackData(update.callback_query.data);
+    if (sourceIds.length) {
+      const details = await formatSourceDetails(update.callback_query.message.chat.id, sourceIds);
+      await answerTelegramCallback(update.callback_query.id, "Opening evidence");
+      await sendTelegramHtmlMessage(update.callback_query.message.chat.id, details, update.callback_query.message.message_id);
+    } else {
+      await answerTelegramCallback(update.callback_query.id);
+    }
+    return;
+  }
+
   const message = update.message ?? update.edited_message;
   if (!message) return;
   const command = parseBotCommand(message.text);
   if (command?.command === "start") {
     await sendTelegramHtmlMessage(message.chat.id, formatStartMessage(message.chat.type), message.message_id);
+    return;
+  }
+  if (command?.command === "help") {
+    await sendTelegramHtmlMessage(message.chat.id, formatCommandHelp(), message.message_id);
     return;
   }
   if (message.chat.type !== "group" && message.chat.type !== "supergroup") return;
@@ -100,7 +125,11 @@ export async function processTelegramUpdate(update: TelegramUpdate) {
   const query = await resolveUserQuery(message);
   if (!query) return;
   const response = query.kind === "ask"
-    ? await answerGroupQuestion(message.chat.id, query.question)
+    ? await answerGroupQuestion(message.chat.id, query.question, query.retrievalHint)
     : await formatGroupSearch(message.chat.id, query.question);
-  await sendTelegramHtmlMessage(message.chat.id, response, message.message_id);
+  const callbackData = buildSourceCallbackData(response.sourceIds ?? []);
+  const replyMarkup = callbackData
+    ? { inline_keyboard: [[{ text: `View evidence (${response.sourceIds?.length ?? 0})`, callback_data: callbackData }]] }
+    : undefined;
+  await sendTelegramHtmlMessage(message.chat.id, response.text, message.message_id, replyMarkup);
 }

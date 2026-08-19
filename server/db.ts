@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   groupMessages,
@@ -219,6 +219,23 @@ export async function searchGroupMessagesByVector(groupId: number, queryEmbeddin
     LIMIT ${boundedLimit}
   `);
   return result[0] as unknown as Array<Record<string, unknown>>;
+}
+
+export async function getGroupMessagesByIds(groupId: number, messageIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const normalizedIds = Array.from(new Set(messageIds.filter(id => Number.isInteger(id) && id > 0))).slice(0, 4);
+  if (normalizedIds.length === 0) return [];
+  const rows = await db.select({
+    id: groupMessages.id,
+    senderName: groupMessages.senderName,
+    senderUsername: groupMessages.senderUsername,
+    textContent: groupMessages.textContent,
+    sentAt: groupMessages.sentAt,
+    links: groupMessages.links,
+    originalMessageLink: groupMessages.originalMessageLink,
+  }).from(groupMessages).where(and(eq(groupMessages.groupId, groupId), inArray(groupMessages.id, normalizedIds)));
+  return normalizedIds.map(id => rows.find(row => Number(row.id) === id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
 }
 
 export async function deleteExpiredGroupMessages(now = new Date(), batchSize = 500, maxBatchesPerGroup = 40) {

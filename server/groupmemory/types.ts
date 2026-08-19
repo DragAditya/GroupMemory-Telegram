@@ -28,7 +28,7 @@ export type TelegramMessage = {
   caption?: string;
   entities?: TelegramEntity[];
   caption_entities?: TelegramEntity[];
-  reply_to_message?: { message_id: number };
+  reply_to_message?: { message_id: number; text?: string; from?: { id: number; is_bot?: boolean; first_name: string; username?: string } };
   message_thread_id?: number;
   photo?: TelegramMedia[];
   document?: TelegramMedia;
@@ -44,6 +44,12 @@ export type TelegramUpdate = {
   update_id: number;
   message?: TelegramMessage;
   edited_message?: TelegramMessage;
+  callback_query?: {
+    id: string;
+    data?: string;
+    message?: TelegramMessage;
+    from: { id: number; is_bot?: boolean; first_name: string; username?: string };
+  };
 };
 
 export type MessageMetadata = {

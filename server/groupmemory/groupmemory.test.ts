@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { prepareDocumentEmbeddingText, prepareQueryEmbeddingText } from "./ai";
-import { parseBotCommand } from "./commands";
+import { formatCommandHelp, parseBotCommand } from "./commands";
 import { extractMessageMetadata } from "./metadata";
+import { buildSourceCallbackData, formatSourceTimestamp, parseSourceCallbackData } from "./search";
 import { isVerifiedTelegramWebhook } from "./telegram";
 import type { TelegramMessage } from "./types";
-import { formatStartMessage } from "./webhook";
+import { formatStartMessage, resolveUserQuery } from "./webhook";
 
 describe("GroupMemory message normalization", () => {
   it("captures text, Telegram entities, media IDs, reply metadata, and a durable source link", () => {
@@ -73,5 +74,51 @@ describe("GroupMemory command and retrieval guards", () => {
     expect(formatStartMessage("private")).toContain("<code>/memory on</code>");
     expect(formatStartMessage("private")).toContain("BotFather");
     expect(formatStartMessage("supergroup")).toContain("<code>/search your words</code>");
+  });
+
+  it("formats compact source callback data and readable UTC timestamps", () => {
+    expect(buildSourceCallbackData([8, 8, 4, 2, 1])).toBe("src:8,4,2,1");
+    expect(parseSourceCallbackData("src:8,4,2,1")).toEqual([8, 4, 2, 1]);
+    expect(parseSourceCallbackData("not-a-source")).toEqual([]);
+    expect(formatSourceTimestamp(new Date(Date.UTC(2026, 7, 19, 14, 5)))).toBe("19 Aug 2026 · 14:05 UTC");
+  });
+
+  it("treats a reply to a bot answer as a follow-up question", async () => {
+    const query = await resolveUserQuery({
+      message_id: 15,
+      date: 1_765_662_500,
+      chat: { id: -100123, type: "supergroup" },
+      from: { id: 77, first_name: "Maya" },
+      text: "What happened after that?",
+      reply_to_message: {
+        message_id: 14,
+        text: "GroupMemory answer about the event.",
+        from: { id: 999, is_bot: true, first_name: "GroupMemory" },
+      },
+    });
+
+    expect(query).toMatchObject({ kind: "ask", question: "What happened after that?" });
+    expect(query?.retrievalHint).toContain("GroupMemory answer about the event.");
+  });
+
+  it("does not treat a reply to another bot as a GroupMemory follow-up", async () => {
+    const query = await resolveUserQuery({
+      message_id: 16,
+      date: 1_765_662_501,
+      chat: { id: -100123, type: "supergroup" },
+      from: { id: 77, first_name: "Maya" },
+      text: "What next?",
+      reply_to_message: {
+        message_id: 14,
+        text: "Weather report for today.",
+        from: { id: 123, is_bot: true, first_name: "Weather Bot" },
+      },
+    });
+
+    expect(query).toBeNull();
+  });
+
+  it("includes reply follow-ups in the command guide", () => {
+    expect(formatCommandHelp()).toContain("Reply to any GroupMemory answer");
   });
 });

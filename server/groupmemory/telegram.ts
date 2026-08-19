@@ -7,6 +7,7 @@ let cachedBotDashboardInfo: TelegramBotDashboardInfo | null = null;
 let botDashboardInfoExpiresAt = 0;
 
 type TelegramResult<T> = { ok: boolean; result: T; description?: string };
+export type TelegramInlineKeyboard = { inline_keyboard: Array<Array<{ text: string; callback_data?: string; url?: string }>> };
 type TelegramBotProfile = {
   id: number;
   username?: string;
@@ -65,14 +66,19 @@ export async function isTelegramGroupAdmin(chatId: number, userId: number) {
   return member.status === "creator" || member.status === "owner" || member.status === "administrator";
 }
 
-export async function sendTelegramHtmlMessage(chatId: number, text: string, replyToMessageId?: number) {
+export async function sendTelegramHtmlMessage(chatId: number, text: string, replyToMessageId?: number, replyMarkup?: TelegramInlineKeyboard) {
   return callTelegram<{ message_id: number }>("sendMessage", {
     chat_id: chatId,
     text,
     parse_mode: "HTML",
     link_preview_options: { is_disabled: true },
     ...(replyToMessageId ? { reply_parameters: { message_id: replyToMessageId } } : {}),
+    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
   });
+}
+
+export async function answerTelegramCallback(callbackQueryId: string, text?: string) {
+  return callTelegram<boolean>("answerCallbackQuery", { callback_query_id: callbackQueryId, ...(text ? { text, show_alert: false } : {}) });
 }
 
 export async function getTelegramBotUsername() {
