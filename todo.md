@@ -92,3 +92,4 @@
 - [ ] Configure the required Vercel secrets, database access, scheduled cleanup, Telegram webhook, and Telegram Login callback URL.
 - [ ] Verify the Vercel production health endpoint and record the deployed URL and activation steps.
 - [x] Change the Vercel retention cron from hourly to the user-approved once-daily schedule.
+- [ ] Repair Vercel serverless API compilation so `/api/health`, webhooks, and login routes are included in the production deployment.
