@@ -32,7 +32,7 @@
 - [x] Add a safe environment-variable template and production deployment checklist.
 - [x] Document Vercel-specific retention scheduling tradeoffs and limitations for GroupMemory.
 - [x] Add a dedicated production deployment checklist covering database, secrets, webhook, cron, owner login, and health verification.
-- [ ] Publish the documented GroupMemory source to a private GitHub repository.
+- [x] Publish the documented GroupMemory source to a private GitHub repository.
 - [x] Show the bot username, Telegram profile link, webhook status, and live connection details in the owner dashboard.
 - [x] Add a clear dashboard action that opens Telegram’s add-to-group flow for the bot.
 - [x] Add a guided post-add checklist for making the bot an admin, disabling privacy mode, and enabling memory.
