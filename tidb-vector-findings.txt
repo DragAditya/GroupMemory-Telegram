@@ -1,0 +1,24 @@
+56:A distance function must be specified when creating and using vector search indexes. Currently, only cosine distance VEC_COSINE_DISTANCE() and L2 distance VEC_L2_DISTANCE() functions are supported.
+73:    VECTOR INDEX idx_embedding ((VEC_COSINE_DISTANCE(embedding)))
+79:CREATE VECTOR INDEX idx_embedding ON foo ((VEC_COSINE_DISTANCE(embedding)));
+80:ALTER TABLE foo ADD VECTOR INDEX idx_embedding ((VEC_COSINE_DISTANCE(embedding)));
+83:CREATE VECTOR INDEX idx_embedding ON foo ((VEC_COSINE_DISTANCE(embedding))) USING HNSW;
+84:ALTER TABLE foo ADD VECTOR INDEX idx_embedding ((VEC_COSINE_DISTANCE(embedding))) USING HNSW;
+95:Cosine Distance: ((VEC_COSINE_DISTANCE(embedding)))
+104:The vector search index can be used in K-nearest neighbor search queries by using the ORDER BY ... LIMIT clause as follows:
+108:ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3, 4, 5]')
+109:LIMIT 10
+112:To use an index in a vector search, make sure that the ORDER BY ... LIMIT clause uses the same distance function as the one specified when creating the vector index.
+122:ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]')
+123:LIMIT 5;
+133:  ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]')
+134:  LIMIT 5
+177:ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]')
+178:LIMIT 10;
+198:     -> ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]');
+216:ORDER BY VEC_L2_DISTANCE(embedding, '[1, 2, 3]')
+217:LIMIT 10;
+224:ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]') DESC
+225:LIMIT 10;
+235:ORDER BY VEC_COSINE_DISTANCE(embedding, '[1, 2, 3]')
+236:LIMIT 10;

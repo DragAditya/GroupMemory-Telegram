@@ -119,6 +119,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -131,6 +132,12 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+}
+
+.gm-grid-bg {
+  background-color: #090b12;
+  background-image: linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px), radial-gradient(circle at 62% -20%, rgba(34, 211, 238, 0.12), transparent 34rem);
+  background-size: 34px 34px, 34px 34px, auto;
 }
 
 @layer components {

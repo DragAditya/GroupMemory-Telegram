@@ -1,0 +1,35 @@
+271:If you'd like to make sure that the webhook was set by you, you can specify secret data in the parameter secret_token. If specified, the request will contain a header “X-Telegram-Bot-Api-Secret-Token” with the secret token as content.
+281:secret_token	String	Optional	A secret token to be sent in a header “X-Telegram-Bot-Api-Secret-Token” in every webhook request, 1-256 characters. Only characters A-Z, a-z, 0-9, _ and - are allowed. The header is useful to ensure that the request comes from a webhook set by you.
+422:message_thread_id	Integer	Optional. Unique identifier of a message thread or forum topic to which the message belongs; for supergroups and private chats only
+438:reply_to_message	Message	Optional. For replies in the same chat and message thread, the original message. Note that the Message object in this field will not contain further reply_to_message fields even if it itself is a reply. If the message is a reply to an ephemeral message, then this field may be omitted.
+455:entities	Array of MessageEntity	Optional. For text messages, special entities like usernames, URLs, bot commands, etc. that appear in the text
+472:caption_entities	Array of MessageEntity	Optional. For messages with a caption, special entities like usernames, URLs, bot commands, etc. that appear in the caption
+490:supergroup_chat_created	True	Optional. Service message: the supergroup has been created. This field can't be received in a message coming through updates, because bot can't be a member of a supergroup when it is created. It can only be found in reply_to_message if someone replies to a very first message in a directly created supergroup.
+491:channel_chat_created	True	Optional. Service message: the channel has been created. This field can't be received in a message coming through updates, because bot can't be a member of a channel when it is created. It can only be found in reply_to_message if someone replies to a very first message in a channel.
+495:pinned_message	MaybeInaccessibleMessage	Optional. Specified message was pinned. Note that the Message object in this field will not contain further reply_to_message fields even if it itself is a reply.
+560:MessageEntity
+580:entities	Array of MessageEntity	Optional. Special entities that appear in the quote. Currently, only bold, italic, underline, strikethrough, spoiler, custom_emoji, and date_time entities are kept in quotes.
+625:quote_entities	Array of MessageEntity	Optional. A JSON-serialized list of special entities that appear in the quote. It can be specified instead of quote_parse_mode.
+677:file_id	String	Identifier for this file, which can be used to download or reuse the file
+687:file_id	String	Identifier for this file, which can be used to download or reuse the file
+701:file_id	String	Identifier for this file, which can be used to download or reuse the file
+715:file_id	String	Identifier for this file, which can be used to download or reuse the file
+727:file_id	String	Identifier for the video file which can be used to download or reuse the file
+746:file_id	String	Identifier for this file, which can be used to download or reuse the file
+757:file_id	String	Identifier for this file, which can be used to download or reuse the file
+774:file_id	String	Identifier for this file, which can be used to download or reuse the file
+785:file_id	String	Identifier for this file, which can be used to download or reuse the file
+904:text_entities	Array of MessageEntity	Optional. Special entities that appear in the option text. Currently, only custom emoji entities are allowed in poll option texts
+917:text_entities	Array of MessageEntity	Optional. A JSON-serialized list of special entities that appear in the poll option text. It can be specified instead of text_parse_mode.
+936:question_entities	Array of MessageEntity	Optional. Special entities that appear in the question. Currently, only custom emoji entities are allowed in poll questions
+948:explanation_entities	Array of MessageEntity	Optional. Special entities like usernames, URLs, bot commands, etc. that appear in the explanation
+953:description_entities	Array of MessageEntity	Optional. Special entities like usernames, URLs, bot commands, etc. that appear in the description
+962:text_entities	Array of MessageEntity	Optional. Special entities that appear in the task text
+972:title_entities	Array of MessageEntity	Optional. Special entities that appear in the checklist title
+984:text_entities	Array of MessageEntity	Optional. List of special entities that appear in the text, which can be specified instead of parse_mode. Currently, only bold, italic, underline, strikethrough, spoiler, custom_emoji, and date_time entities are allowed.
+992:title_entities	Array of MessageEntity	Optional. List of special entities that appear in the title, which can be specified instead of parse_mode. Currently, only bold, italic, underline, strikethrough, spoiler, custom_emoji, and date_time entities are allowed.
+1066:poll_message	MaybeInaccessibleMessage	Optional. Message containing the poll to which the option was added, if known. Note that the Message object in this field will not contain the reply_to_message field even if it itself is a reply.
+1069:option_text_entities	Array of MessageEntity	Optional. Special entities that appear in the option_text
+1075:poll_message	MaybeInaccessibleMessage	Optional. Message containing the poll from which the option was deleted, if known. Note that the Message object in this field will not contain the reply_to_message field even if it itself is a reply.
+1078:option_text_entities	Array of MessageEntity	Optional. Special entities that appear in the option_text
+1170:checklist_message	Message	Optional. Message containing the checklist whose tasks were marked as done or not done. Note that the Message object in this field will not contain the reply_to_message field even if it itself is a reply.
