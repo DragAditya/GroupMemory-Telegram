@@ -1,8 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
-import { TRPCError } from "@trpc/server";
 import { getGroupDashboardStatuses, getSystemJobByKey } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
-import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 
@@ -20,10 +18,9 @@ export const appRouter = router({
     }),
   }),
   groupMemory: router({
-    dashboard: adminProcedure.query(async ({ ctx }) => {
-      if (ctx.user.openId !== ENV.ownerOpenId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "This dashboard is restricted to the bot owner." });
-      }
+    // The project owner is provisioned as the sole admin by the authenticated account flow.
+    // Keep this dashboard behind the role guard rather than duplicating a deployment-sensitive ID check.
+    dashboard: adminProcedure.query(async () => {
       const [groups, retentionJob] = await Promise.all([
         getGroupDashboardStatuses(),
         getSystemJobByKey("groupmemory-retention"),
