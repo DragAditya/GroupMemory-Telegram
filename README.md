@@ -1,10 +1,35 @@
-# GroupMemory
+# GroupMemory — Telegram
 
-**GroupMemory** is a Telegram bot that gives large groups a private, searchable memory. It records message metadata, stores Gemini embeddings, retrieves only relevant evidence, and answers with the original Telegram sources.
+**GroupMemory — Telegram** is a self-hostable Telegram bot that gives groups a private, searchable memory. It records message metadata, stores Gemini embeddings, retrieves only relevant evidence, and answers with the original Telegram sources.
 
 The project includes a **Telegram-authenticated dashboard**. Every group administrator can sign in with Telegram and see only the groups where the bot has verified that person as a current administrator. The durable project owner also receives a separate global operations console with bot health and platform-wide statistics.
 
 > **Privacy model:** GroupMemory stores only messages from groups where memory has been enabled. Each group independently controls retention. Answer generation receives retrieved evidence only and is instructed to say when evidence is insufficient.
+
+## Quick start
+
+The following path starts a local development copy. A public HTTPS deployment is required before Telegram can deliver webhooks or complete Telegram Login.
+
+```bash
+git clone https://github.com/DragAditya/GroupMemory-Telegram.git
+cd GroupMemory-Telegram
+pnpm install --frozen-lockfile
+
+# Copy the variable names from docs/environment-template.md into a new local .env file.
+# Do not commit the .env file.
+pnpm drizzle-kit migrate
+pnpm dev
+```
+
+Open `http://localhost:3000` after the server starts. Before using the bot in a real group, complete the **Telegram setup** and **first live verification** steps below.
+
+| You need | Why it is required |
+| --- | --- |
+| Node.js 22+ and pnpm 10+ | Runs the TypeScript server, React dashboard, and test tooling. |
+| TiDB or MySQL-compatible database with TiDB vector support | Persists group metadata and 768-dimension vector embeddings. Plain MySQL without vector functions is not sufficient for semantic retrieval. |
+| Telegram bot from BotFather | Receives group updates and confirms dashboard identities. |
+| Google Gemini API key | Creates embeddings and grounded responses. |
+| Public HTTPS URL for production | Required for Telegram webhooks, Telegram Login, Vercel, Render, or another public host. |
 
 ## What it does
 
@@ -47,11 +72,11 @@ Google Gemini ──► evidence-only answer ──► Telegram reply with sourc
 | `/search <query>` | Anyone in a configured group | Returns matching retained messages and links. |
 | `@BotUsername <question>` | Anyone in a configured group | Treats a bot mention as an evidence-only question. |
 
-## Local setup
+## Detailed local installation
 
 ### Requirements
 
-Install **Node.js 22+**, **pnpm 10+**, and a TiDB/MySQL-compatible database. TiDB is recommended because the schema uses `VECTOR(768)` and vector similarity functions.
+Install **Node.js 22+**, **pnpm 10+**, and a TiDB/MySQL-compatible database. TiDB is required for the provided `VECTOR(768)` schema and cosine-similarity retrieval.
 
 ```bash
 git clone https://github.com/YOUR-ACCOUNT/groupmemory.git
@@ -59,7 +84,9 @@ cd groupmemory
 pnpm install --frozen-lockfile
 ```
 
-Create a local uncommitted `.env` file from the values in [the environment variable reference](docs/environment-template.md). Fill in every required value, then create the database tables:
+Create a local, uncommitted `.env` file using [the environment variable reference](docs/environment-template.md). Fill in every required value. Never place real values in the template, source files, issues, or pull requests.
+
+Then apply the committed database migrations and start the development server:
 
 ```bash
 pnpm drizzle-kit generate
@@ -67,7 +94,15 @@ pnpm drizzle-kit migrate
 pnpm dev
 ```
 
-The local dashboard opens at `http://localhost:3000`. The health check is available at `GET /api/health`.
+`pnpm drizzle-kit generate` is only needed after you change `drizzle/schema.ts`; a fresh clone can run `pnpm drizzle-kit migrate` directly. The local dashboard opens at `http://localhost:3000`. The health check is available at `GET /api/health`.
+
+Run the quality gates before opening a pull request or deployment:
+
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
 
 ## Required environment variables
 
@@ -107,6 +142,12 @@ curl "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"
 ```
 
 7. Open the owner dashboard, select **Add bot to a group**, choose the group, make the bot a group admin, and send `/memory on` in that group.
+
+## First live verification
+
+After deployment, use a small test group before connecting a large community. Add the bot, make it an administrator, turn off Group Privacy, then send `/memory on`. Send two ordinary messages with a distinctive phrase, then ask `/search <distinctive phrase>`. Confirm that the result includes source links and India Standard Time timestamps. Finally, tap **Evidence** and reply directly to a GroupMemory answer to confirm the compact evidence and follow-up paths.
+
+For the dashboard, sign in with Telegram. A group appears for an administrator after they send `/status`, `/memory on`, `/memory off`, or `/retention` in that group. The dashboard rechecks administrator status before returning the group data.
 
 ## Telegram Login and multi-user dashboard setup
 

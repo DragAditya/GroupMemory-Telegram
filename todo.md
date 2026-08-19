@@ -47,7 +47,8 @@
 - [x] Add tests for concise answer formatting, compact source behavior, and reply-based follow-up questions.
 - [x] Register Telegram callback-query updates after publishing the compact evidence button flow.
 - [x] Add output-shape tests for compact answers, source details, and callback-query handling.
-- [ ] Verify in a live group that the evidence button opens concise dated sources and replying to an answer continues the question.
+- [x] Confirm in a live group that the Evidence button opens concise IST-dated sources.
+- [x] Confirm in a live group that replying to a GroupMemory answer continues the question correctly.
 - [x] Recognize bot-help, command-list, casual acknowledgement, and group-statistic intents before semantic retrieval.
 - [x] Answer personal/group message-count questions from exact retained database facts with appropriate scope disclosure.
 - [x] Format evidence timestamps in India Standard Time.
@@ -80,4 +81,8 @@
 - [x] Add tests and user instructions for the alternate Telegram bot-code linking method.
 - [x] Return explicit pending, expired, and already-consumed outcomes from bot-code polling, with a recovery message instead of indefinite waiting.
 - [x] Add route-level tests for bot-code creation and polling states, including pending, linked, expired, and consumed outcomes.
-- [ ] Deploy and confirm on the live domain that the corrected Telegram Login claim mapping completes successfully after approval.
+- [x] Deploy and confirm on the live domain that the corrected Telegram Login claim mapping completes successfully after approval.
+- [x] Audit public-release files for accidental secrets and deployment-sensitive material.
+- [x] Expand the README with a clear public installation, configuration, Telegram setup, and deployment guide.
+- [ ] Rename the GitHub repository to `GroupMemory-Telegram`, make it public, and push the finalized documentation.
+- [ ] Verify the public GitHub repository is accessible with the expected README and source history.
