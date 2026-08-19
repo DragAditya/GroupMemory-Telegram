@@ -34,7 +34,6 @@ Thumbs.db
 logs
 *.log
 .oidc-production-logs.txt
-api/[...path].mjs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
