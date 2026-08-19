@@ -4,6 +4,7 @@ import { parseBotCommand } from "./commands";
 import { extractMessageMetadata } from "./metadata";
 import { isVerifiedTelegramWebhook } from "./telegram";
 import type { TelegramMessage } from "./types";
+import { formatStartMessage } from "./webhook";
 
 describe("GroupMemory message normalization", () => {
   it("captures text, Telegram entities, media IDs, reply metadata, and a durable source link", () => {
@@ -66,5 +67,11 @@ describe("GroupMemory command and retrieval guards", () => {
   it("rejects an incorrect Telegram webhook secret", () => {
     expect(isVerifiedTelegramWebhook(process.env.TELEGRAM_WEBHOOK_SECRET)).toBe(true);
     expect(isVerifiedTelegramWebhook("incorrect-webhook-secret")).toBe(false);
+  });
+
+  it("provides useful start guidance in direct chats and in groups", () => {
+    expect(formatStartMessage("private")).toContain("<code>/memory on</code>");
+    expect(formatStartMessage("private")).toContain("BotFather");
+    expect(formatStartMessage("supergroup")).toContain("<code>/search your words</code>");
   });
 });

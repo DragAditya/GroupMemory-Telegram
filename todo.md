@@ -18,3 +18,4 @@
 - [x] Process retention deletion in bounded batches with explicit cleanup progress logging.
 - [x] Verify the owner dashboard at mobile and tablet breakpoints before delivery.
 - [x] Send a simple Telegram onboarding checklist covering privacy mode, group access, commands, and active service verification.
+- [x] Reply with an onboarding message when a user sends `/start` in a direct chat or group.

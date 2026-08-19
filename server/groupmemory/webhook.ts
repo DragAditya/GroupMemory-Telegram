@@ -21,9 +21,40 @@ export function verifyTelegramWebhook(secret: string | undefined) {
   return isVerifiedTelegramWebhook(secret);
 }
 
+export function formatStartMessage(chatType: string) {
+  if (chatType === "private") {
+    return [
+      "<b>Welcome to GroupMemory</b>",
+      "I help Telegram groups remember and search their conversations.",
+      "",
+      "<b>How to start</b>",
+      "1. Turn off Group Privacy for this bot in BotFather.",
+      "2. Add the bot as an admin in your group.",
+      "3. In the group, send <code>/memory on</code>.",
+      "",
+      "Then use <code>/ask What did we decide?</code> or <code>/search React</code> in that group.",
+    ].join("\n");
+  }
+  return [
+    "<b>GroupMemory is ready.</b>",
+    "An admin can start recording with <code>/memory on</code>.",
+    "",
+    "<b>Admin controls</b>",
+    "<code>/retention 7d</code>, <code>/retention 30d</code>, <code>/retention 90d</code>, <code>/status</code>",
+    "",
+    "Ask with <code>/ask your question</code>, search with <code>/search your words</code>, or mention me with a question.",
+  ].join("\n");
+}
+
 export async function processTelegramUpdate(update: TelegramUpdate) {
   const message = update.message ?? update.edited_message;
-  if (!message || (message.chat.type !== "group" && message.chat.type !== "supergroup")) return;
+  if (!message) return;
+  const command = parseBotCommand(message.text);
+  if (command?.command === "start") {
+    await sendTelegramHtmlMessage(message.chat.id, formatStartMessage(message.chat.type), message.message_id);
+    return;
+  }
+  if (message.chat.type !== "group" && message.chat.type !== "supergroup") return;
   const sender = message.from ?? (message.sender_chat
     ? { id: message.sender_chat.id, first_name: message.sender_chat.title ?? "Anonymous administrator", username: message.sender_chat.username }
     : null);
