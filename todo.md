@@ -87,3 +87,8 @@
 - [x] Rename the GitHub repository to `GroupMemory-Telegram`, make it public, and push the finalized documentation.
 - [x] Verify the public GitHub repository is accessible with the expected README and source history.
 - [x] Remove the tracked production-log artifact from the public repository and prevent it from being recommitted.
+- [ ] Audit the public repository’s Vercel configuration, build behavior, and production environment requirements.
+- [ ] Deploy `GroupMemory-Telegram` to a Vercel project connected to the public GitHub repository.
+- [ ] Configure the required Vercel secrets, database access, scheduled cleanup, Telegram webhook, and Telegram Login callback URL.
+- [ ] Verify the Vercel production health endpoint and record the deployed URL and activation steps.
+- [x] Change the Vercel retention cron from hourly to the user-approved once-daily schedule.

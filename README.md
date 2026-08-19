@@ -163,17 +163,17 @@ If the Telegram Login approval callback is unavailable, choose **Link through Te
 
 ## Deploy on Vercel
 
-Vercel is suitable for this request-driven webhook server. The included `vercel.json` builds the React client, exposes `api/index.ts` as the Express function, and schedules hourly cleanup.
+Vercel is suitable for this request-driven webhook server. The included `vercel.json` builds the React client, exposes `api/index.ts` as the Express function, and schedules once-daily cleanup to remain compatible with Vercel Hobby cron limits.
 
 1. Push this repository to GitHub and import it in Vercel.
 2. Add every required environment variable from [the environment variable reference](docs/environment-template.md) in **Project Settings → Environment Variables**.
 3. Set a strong `CRON_SECRET`. Vercel sends it as `Authorization: Bearer <CRON_SECRET>` when running the configured cron route.[1]
 4. Deploy. Use the resulting production URL when registering the Telegram webhook and add `https://YOUR-VERCEL-DOMAIN/api/auth/telegram/callback` to the bot’s allowed Telegram Login URLs.
-5. Open **Settings → Cron Jobs** to confirm `/api/scheduled/groupmemory-retention` runs at `0 * * * *` (UTC).[2]
+5. Open **Settings → Cron Jobs** to confirm `/api/scheduled/groupmemory-retention` runs once daily at `0 0 * * *` (UTC).[2]
 
 > Vercel Cron invokes the production URL with an HTTP `GET`; GroupMemory accepts both `GET` and `POST` for its authenticated retention path. Vercel cron schedules and their timezone are configured in `vercel.json`.[2]
 
-> **Vercel tradeoff:** Vercel Cron only runs against production deployments, uses UTC schedules, and is a request-triggered scheduler rather than a continuously running worker. Its `CRON_SECRET` protects the cleanup request, but Vercel does not provide a shared persistent process for retries or long-lived queues. For GroupMemory’s bounded hourly cleanup this is suitable; use Render or another dedicated job host if you need more control over scheduling, retries, or job runtime.[1] [2]
+> **Vercel Hobby tradeoff:** Vercel Cron runs only against production deployments, uses UTC schedules, and is request-triggered rather than a continuously running worker. The once-daily schedule means an expired message can remain for up to about one additional day. Its `CRON_SECRET` protects the cleanup request. Use Render or a Vercel paid plan when hourly retention cleanup is required.[1] [2]
 
 ## Deploy on Render
 
