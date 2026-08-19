@@ -19,3 +19,7 @@
 - [x] Verify the owner dashboard at mobile and tablet breakpoints before delivery.
 - [x] Send a simple Telegram onboarding checklist covering privacy mode, group access, commands, and active service verification.
 - [x] Reply with an onboarding message when a user sends `/start` in a direct chat or group.
+- [x] Fix the inactive owner-dashboard sign-in button so it launches the Manus OAuth flow.
+- [ ] Resolve or verify HTTPS access on the assigned live dashboard domain.
+- [ ] Publish the automatic login redirect fix and verify it on the live dashboard URL.
+- [ ] Validate owner OAuth return flow on the production dashboard URL.

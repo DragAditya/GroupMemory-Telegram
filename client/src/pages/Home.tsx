@@ -17,7 +17,7 @@ function dateLabel(value: Date | string | null) {
 }
 
 export default function Home() {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated } = useAuth({ redirectOnUnauthenticated: true });
   const dashboard = trpc.groupMemory.dashboard.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const groups = dashboard.data?.groups ?? [];
   const retainedMessageCount = groups.reduce((total, group) => total + Number(group.messageCount), 0);
@@ -30,8 +30,8 @@ export default function Home() {
           <div className="mb-8 flex size-12 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950"><Bot size={24} /></div>
           <p className="text-sm font-medium text-cyan-200">GroupMemory</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">Owner access required.</h1>
-          <p className="mt-4 leading-7 text-slate-400">Sign in with the Manus account that owns this bot project to view its operating status.</p>
-          <Button onClick={() => startLogin()} className="mt-8 w-full bg-cyan-300 font-semibold text-slate-950 hover:bg-cyan-200">Sign in securely <ChevronRight size={16} /></Button>
+          <p className="mt-4 leading-7 text-slate-400">Opening secure sign-in with the Manus account that owns this bot project.</p>
+          <Button onClick={() => startLogin()} className="mt-8 w-full bg-cyan-300 font-semibold text-slate-950 hover:bg-cyan-200">Continue to sign in <ChevronRight size={16} /></Button>
         </div>
       </div>
     );
