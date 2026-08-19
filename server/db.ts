@@ -238,6 +238,30 @@ export async function getGroupMessagesByIds(groupId: number, messageIds: number[
   return normalizedIds.map(id => rows.find(row => Number(row.id) === id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
 }
 
+export async function getRetainedMessageCount(groupId: number, senderTelegramUserId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const filters = [eq(groupMessages.groupId, groupId)];
+  if (senderTelegramUserId !== undefined) filters.push(eq(groupMessages.senderTelegramUserId, senderTelegramUserId));
+  const result = await db.execute(sql`SELECT COUNT(*) AS messageCount FROM group_messages WHERE ${and(...filters)}`);
+  return Number((result[0] as unknown as Array<{ messageCount?: number }>)[0]?.messageCount ?? 0);
+}
+
+export async function getTopRetainedSender(groupId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const result = await db.execute(sql`
+    SELECT senderName, senderUsername, COUNT(*) AS messageCount
+    FROM group_messages
+    WHERE groupId = ${groupId}
+    GROUP BY senderTelegramUserId, senderName, senderUsername
+    ORDER BY messageCount DESC, senderName ASC
+    LIMIT 1
+  `);
+  const row = (result[0] as unknown as Array<{ senderName?: string; senderUsername?: string | null; messageCount?: number }>)[0];
+  return row ? { senderName: String(row.senderName ?? "Unknown member"), senderUsername: row.senderUsername ? String(row.senderUsername) : null, messageCount: Number(row.messageCount ?? 0) } : null;
+}
+
 export async function deleteExpiredGroupMessages(now = new Date(), batchSize = 500, maxBatchesPerGroup = 40) {
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");

@@ -68,7 +68,7 @@ function sourceLine(item: SearchEvidence, includeExcerpt: boolean) {
 
 export function formatSourceTimestamp(value: Date) {
   if (Number.isNaN(value.getTime())) return "Time unavailable";
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(value).replace(",", " ·") + " UTC";
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(value).replace(",", " ·") + " IST";
 }
 
 export function buildSourceCallbackData(sourceIds: number[]) {
@@ -79,6 +79,16 @@ export function buildSourceCallbackData(sourceIds: number[]) {
 export function parseSourceCallbackData(value: string | undefined) {
   if (!value?.startsWith("src:")) return [];
   return value.slice(4).split(",").map(Number).filter(id => Number.isInteger(id) && id > 0).slice(0, 4);
+}
+
+export function buildDeleteCallbackData(requesterTelegramUserId: number) {
+  return Number.isInteger(requesterTelegramUserId) && requesterTelegramUserId > 0 ? `del:${requesterTelegramUserId}` : null;
+}
+
+export function parseDeleteCallbackData(value: string | undefined) {
+  if (!value?.startsWith("del:")) return null;
+  const requesterTelegramUserId = Number(value.slice(4));
+  return Number.isInteger(requesterTelegramUserId) && requesterTelegramUserId > 0 ? requesterTelegramUserId : null;
 }
 
 export type TelegramResponse = { text: string; sourceIds?: number[] };

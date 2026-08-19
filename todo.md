@@ -45,8 +45,14 @@
 - [x] Let a user reply to a GroupMemory answer with a follow-up question without needing `/ask`.
 - [x] Make `/start`, `/status`, memory controls, search, and error messages clearer and more informative.
 - [x] Add tests for concise answer formatting, compact source behavior, and reply-based follow-up questions.
-- [ ] Register Telegram callback-query updates after publishing the compact evidence button flow.
+- [x] Register Telegram callback-query updates after publishing the compact evidence button flow.
 - [x] Add output-shape tests for compact answers, source details, and callback-query handling.
+- [ ] Verify in a live group that the evidence button opens concise dated sources and replying to an answer continues the question.
+- [x] Recognize bot-help, command-list, casual acknowledgement, and group-statistic intents before semantic retrieval.
+- [x] Answer personal/group message-count questions from exact retained database facts with appropriate scope disclosure.
+- [x] Format evidence timestamps in India Standard Time.
+- [x] Add safe inline delete controls for the answer requester and group admins.
+- [x] Add tests for intent routing, exact statistics, IST source formatting, and delete authorization.
 - [x] Replace repetitive Telegram source lists with compact source access from each answer.
 - [x] Improve Telegram answer hierarchy, evidence labels, and human-readable source timestamps.
 - [x] Add tests for concise answer formatting and source access behavior.

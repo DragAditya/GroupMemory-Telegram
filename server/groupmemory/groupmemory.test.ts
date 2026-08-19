@@ -80,7 +80,7 @@ describe("GroupMemory command and retrieval guards", () => {
     expect(buildSourceCallbackData([8, 8, 4, 2, 1])).toBe("src:8,4,2,1");
     expect(parseSourceCallbackData("src:8,4,2,1")).toEqual([8, 4, 2, 1]);
     expect(parseSourceCallbackData("not-a-source")).toEqual([]);
-    expect(formatSourceTimestamp(new Date(Date.UTC(2026, 7, 19, 14, 5)))).toBe("19 Aug 2026 · 14:05 UTC");
+    expect(formatSourceTimestamp(new Date(Date.UTC(2026, 7, 19, 14, 5)))).toBe("19 Aug 2026 · 19:35 IST");
   });
 
   it("treats a reply to a bot answer as a follow-up question", async () => {

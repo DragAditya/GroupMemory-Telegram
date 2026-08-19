@@ -12,13 +12,16 @@ vi.mock("./commands", () => ({ formatCommandHelp: vi.fn(), handleControlCommand:
 vi.mock("./metadata", () => ({ extractMessageMetadata: vi.fn() }));
 vi.mock("./search", () => ({
   answerGroupQuestion: vi.fn(),
+  buildDeleteCallbackData: (userId: number) => `del:${userId}`,
   buildSourceCallbackData: vi.fn(),
   formatGroupSearch: vi.fn(),
   formatSourceDetails: mocks.formatSourceDetails,
+  parseDeleteCallbackData: () => null,
   parseSourceCallbackData: (value?: string) => value === "src:7,4" ? [7, 4] : [],
 }));
 vi.mock("./telegram", () => ({
   answerTelegramCallback: mocks.answerTelegramCallback,
+  clearTelegramInlineKeyboard: vi.fn(),
   getTelegramBotUsername: vi.fn(),
   isVerifiedTelegramWebhook: vi.fn(),
   sendTelegramHtmlMessage: mocks.sendTelegramHtmlMessage,
@@ -41,6 +44,8 @@ describe("evidence callback handling", () => {
     });
 
     expect(mocks.answerTelegramCallback).toHaveBeenCalledWith("callback-1", "Opening evidence");
-    expect(mocks.sendTelegramHtmlMessage).toHaveBeenCalledWith(-100123, "<b>Evidence · 2 messages</b>", 90);
+    expect(mocks.sendTelegramHtmlMessage).toHaveBeenCalledWith(-100123, "<b>Evidence · 2 messages</b>", 90, {
+      inline_keyboard: [[{ text: "Delete evidence", callback_data: "del:5" }]],
+    });
   });
 });

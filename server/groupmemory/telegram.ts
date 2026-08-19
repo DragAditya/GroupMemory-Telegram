@@ -81,6 +81,14 @@ export async function answerTelegramCallback(callbackQueryId: string, text?: str
   return callTelegram<boolean>("answerCallbackQuery", { callback_query_id: callbackQueryId, ...(text ? { text, show_alert: false } : {}) });
 }
 
+export async function deleteTelegramMessage(chatId: number, messageId: number) {
+  return callTelegram<boolean>("deleteMessage", { chat_id: chatId, message_id: messageId });
+}
+
+export async function clearTelegramInlineKeyboard(chatId: number, messageId: number) {
+  return callTelegram<boolean>("editMessageReplyMarkup", { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } });
+}
+
 export async function getTelegramBotUsername() {
   if (cachedBotUsername) return cachedBotUsername;
   const bot = await callTelegram<{ username?: string }>("getMe", {});

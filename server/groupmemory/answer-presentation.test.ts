@@ -66,7 +66,7 @@ describe("Telegram answer presentation", () => {
     const details = await formatSourceDetails(-100123, [7]);
 
     expect(details).toContain("Evidence · 1 message");
-    expect(details).toContain("19 Aug 2026 · 14:05 UTC");
+    expect(details).toContain("19 Aug 2026 · 19:35 IST");
     expect(details).toContain("https://t.me/c/123/7");
   });
 });
