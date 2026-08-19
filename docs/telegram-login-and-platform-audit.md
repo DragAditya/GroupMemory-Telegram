@@ -25,12 +25,13 @@ The Telegram login credentials and allowed callback URLs must be configured befo
 
 | Component | Design decision | Protection provided |
 | --- | --- | --- |
-| Dashboard identity | Store Telegram `sub` as a unique numeric `telegramId`; preserve the existing internal `openId` so prior Manus-owner access remains intact. | A Telegram account is linked to one durable internal account without exposing bot credentials to the browser. |
+| Dashboard identity | Require the verified OIDC `sub`, then store the signed Bot API `id` claim as the numeric `telegramId` used for live `getChatMember` checks; preserve the existing internal `openId`. | An OIDC subject can be opaque or exceed JavaScript’s safe integer range, while the signed Bot API `id` safely matches the group-administrator API. |
 | Owner claim | The authenticated existing project owner starts a one-time Telegram-linking flow. The callback binds that Telegram ID to the durable owner record. | Owner access cannot be granted merely by knowing a Telegram numeric ID. |
 | Group grants | A `user_group_access` record is created only after the bot verifies that the command sender is a live Telegram group administrator. | A dashboard user cannot self-assign a group or view unrelated group metadata. |
 | Access freshness | The personal dashboard rechecks the Telegram admin status for each accessible group before returning scoped data; stale or failed checks are excluded. | Group access is removed when the person is no longer an administrator, rather than remaining permanent. |
 | Owner console | The global procedure requires `isProjectOwner`, not a general application-admin role. | Ordinary Telegram dashboard users cannot enumerate groups, messages, webhook health, or platform totals. |
 | Login callback | Use random state, an HTTP-only host-only cookie, PKCE S256, basic-authenticated code exchange, JWKS signature validation, and issuer/audience/expiry checks. | Protects against CSRF, authorization-code interception, token forgery, and token mix-up. |
+| Bot-code fallback | Generate a high-entropy, short-lived `GM-…` code plus a separate browser-only poll token. Confirm the code only from a Telegram private-chat `/start` update, then consume the record atomically. | Provides an alternate verified Telegram identity link without granting a session to a party that knows only the displayed code. |
 
 ## Dashboard information model
 

@@ -121,6 +121,29 @@ export const userGroupAccess = mysqlTable(
   ],
 );
 
+/** Short-lived, single-use device codes that let a Telegram direct message confirm a dashboard login. */
+export const telegramLoginCodes = mysqlTable(
+  "telegram_login_codes",
+  {
+    id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+    codeHash: varchar("codeHash", { length: 64 }).notNull(),
+    pollTokenHash: varchar("pollTokenHash", { length: 64 }).notNull(),
+    ownerOpenId: varchar("ownerOpenId", { length: 64 }),
+    telegramId: bigint("telegramId", { mode: "number" }),
+    telegramName: varchar("telegramName", { length: 512 }),
+    telegramUsername: varchar("telegramUsername", { length: 128 }),
+    confirmedAt: timestamp("confirmedAt"),
+    consumedAt: timestamp("consumedAt"),
+    expiresAt: timestamp("expiresAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("telegram_login_codes_code_hash_unique").on(table.codeHash),
+    uniqueIndex("telegram_login_codes_poll_token_hash_unique").on(table.pollTokenHash),
+    index("telegram_login_codes_expires_idx").on(table.expiresAt),
+  ],
+);
+
 export const systemJobs = mysqlTable("system_jobs", {
   id: int("id").autoincrement().primaryKey(),
   jobKey: varchar("jobKey", { length: 64 }).notNull().unique(),
@@ -136,3 +159,4 @@ export type InsertUser = typeof users.$inferInsert;
 export type TelegramGroup = typeof telegramGroups.$inferSelect;
 export type GroupMessage = typeof groupMessages.$inferSelect;
 export type UserGroupAccess = typeof userGroupAccess.$inferSelect;
+export type TelegramLoginCode = typeof telegramLoginCodes.$inferSelect;

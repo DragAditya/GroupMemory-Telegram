@@ -75,3 +75,9 @@
 - [x] Add route-level Telegram OIDC callback tests for tampered state rejection and owner-link identity binding.
 - [x] Add automated live-admin revocation and owner global-metrics aggregation regression tests.
 - [x] Remove the deprecated `maxAge` option when clearing the one-time Telegram OIDC state cookie.
+- [x] Diagnose and fix the live `Telegram Login could not be verified` callback failure.
+- [x] Add a secure one-time `/start <code>` Telegram bot flow that can link a dashboard session to a verified Telegram identity.
+- [x] Add tests and user instructions for the alternate Telegram bot-code linking method.
+- [x] Return explicit pending, expired, and already-consumed outcomes from bot-code polling, with a recovery message instead of indefinite waiting.
+- [x] Add route-level tests for bot-code creation and polling states, including pending, linked, expired, and consumed outcomes.
+- [ ] Deploy and confirm on the live domain that the corrected Telegram Login claim mapping completes successfully after approval.

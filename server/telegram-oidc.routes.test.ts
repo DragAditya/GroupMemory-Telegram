@@ -21,7 +21,7 @@ vi.mock("jose", () => ({
 import * as db from "./db";
 import { sdk } from "./_core/sdk";
 import { jwtVerify } from "jose";
-import { registerTelegramOidcRoutes, telegramOidcInternals } from "./telegram-oidc";
+import { registerTelegramOidcRoutes, telegramOidcInternals, verifyTelegramIdentityToken } from "./telegram-oidc";
 
 describe("Telegram OIDC callback routes", () => {
   let server: Server;
@@ -46,7 +46,7 @@ describe("Telegram OIDC callback routes", () => {
     vi.clearAllMocks();
     vi.mocked(db.linkTelegramIdentityToProjectOwner).mockResolvedValue({ openId: "existing-owner", name: "Owner" } as never);
     vi.mocked(sdk.createSessionToken).mockResolvedValue("signed-dashboard-session");
-    vi.mocked(jwtVerify).mockResolvedValue({ payload: { sub: "9001", name: "Owner Telegram", preferred_username: "owner" } } as never);
+    vi.mocked(jwtVerify).mockResolvedValue({ payload: { sub: "telegram-oidc-subject-9001", id: 9001, name: "Owner Telegram", preferred_username: "owner" } } as never);
     vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       if (String(input) === "https://oauth.telegram.org/token") {
         return Promise.resolve(new Response(JSON.stringify({ id_token: "verified-id-token" }), { status: 200, headers: { "content-type": "application/json" } }));
@@ -109,5 +109,17 @@ describe("Telegram OIDC callback routes", () => {
       username: "owner",
     });
     expect(response.headers.get("set-cookie")).toContain("app_session_id=signed-dashboard-session");
+  });
+
+  it("uses the signed Bot API id instead of the potentially large opaque OIDC subject for dashboard group checks", async () => {
+    vi.mocked(jwtVerify).mockResolvedValueOnce({
+      payload: { sub: "1234123412341234123", id: 9001, name: "Owner Telegram", preferred_username: "owner" },
+    } as never);
+
+    await expect(verifyTelegramIdentityToken("verified-id-token")).resolves.toEqual({
+      telegramId: 9001,
+      name: "Owner Telegram",
+      username: "owner",
+    });
   });
 });

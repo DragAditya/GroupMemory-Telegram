@@ -148,9 +148,11 @@ export async function verifyTelegramIdentityToken(idToken: string): Promise<Tele
     audience: ENV.telegramOidcClientId,
   });
   const subject = requiredClaim(payload, "sub");
-  const telegramId = subject ? Number(subject) : Number.NaN;
-  if (!Number.isSafeInteger(telegramId) || telegramId <= 0) {
-    throw new Error("Telegram Login token has an invalid subject");
+  const telegramId = typeof payload.id === "number" || typeof payload.id === "string"
+    ? Number(payload.id)
+    : Number.NaN;
+  if (!subject || !Number.isSafeInteger(telegramId) || telegramId <= 0) {
+    throw new Error("Telegram Login token is missing a valid Telegram user identity");
   }
   const username = requiredClaim(payload, "preferred_username") ?? requiredClaim(payload, "username") ?? null;
   const name = requiredClaim(payload, "name")

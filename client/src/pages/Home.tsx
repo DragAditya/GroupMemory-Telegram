@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import TelegramBotCodeLink from "@/components/TelegramBotCodeLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -138,7 +139,7 @@ function OwnerLinkNotice() {
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-amber-300/25 bg-amber-300/[0.08] p-5 text-amber-50 sm:flex-row sm:items-center sm:justify-between">
       <div><p className="font-semibold">Link your Telegram account</p><p className="mt-1 text-sm leading-6 text-amber-100/75">The owner console is available, but your personal group list needs a verified Telegram identity first.</p></div>
-      <Button asChild className="bg-amber-300 text-slate-950 hover:bg-amber-200"><a href="/api/auth/telegram/link-owner?returnTo=/">Link Telegram account <ExternalLink size={15} /></a></Button>
+      <div className="flex flex-wrap gap-2"><Button asChild className="bg-amber-300 text-slate-950 hover:bg-amber-200"><a href="/api/auth/telegram/link-owner?returnTo=/">Link with Telegram Login <ExternalLink size={15} /></a></Button><TelegramBotCodeLink compact /></div>
     </section>
   );
 }

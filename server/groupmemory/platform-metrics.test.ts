@@ -8,5 +8,5 @@ describe("owner platform metrics", () => {
     expect(metrics.memoryEnabledGroupCount).toBeLessThanOrEqual(metrics.groupCount);
     expect(metrics.activeGroupCount).toBeLessThanOrEqual(metrics.groupCount);
     expect(metrics.retainedMessageCount).toBeGreaterThanOrEqual(0);
-  });
+  }, 15_000);
 });

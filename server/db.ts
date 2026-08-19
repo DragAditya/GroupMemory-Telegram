@@ -5,6 +5,7 @@ import {
   InsertUser,
   systemJobs,
   telegramGroups,
+  telegramLoginCodes,
   userGroupAccess,
   users,
 } from "../drizzle/schema";
@@ -202,6 +203,84 @@ export async function markUserGroupAccessVerified(userId: number, groupId: numbe
   const db = await getDb();
   if (!db) throw new Error("Database is unavailable");
   await db.update(userGroupAccess).set({ lastVerifiedAt: new Date() }).where(and(eq(userGroupAccess.userId, userId), eq(userGroupAccess.groupId, groupId)));
+}
+
+export type CreateTelegramLoginCodeInput = {
+  codeHash: string;
+  pollTokenHash: string;
+  ownerOpenId?: string | null;
+  expiresAt: Date;
+};
+
+export async function createTelegramLoginCode(input: CreateTelegramLoginCodeInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.insert(telegramLoginCodes).values({
+    codeHash: input.codeHash,
+    pollTokenHash: input.pollTokenHash,
+    ownerOpenId: input.ownerOpenId ?? null,
+    expiresAt: input.expiresAt,
+  });
+}
+
+export type ConfirmTelegramLoginCodeInput = {
+  codeHash: string;
+  telegramId: number;
+  telegramName: string;
+  telegramUsername?: string | null;
+};
+
+/** Binds a one-time code to the Telegram account that sent it in a private bot chat. */
+export async function confirmTelegramLoginCode(input: ConfirmTelegramLoginCodeInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const now = new Date();
+  const record = (await db.select().from(telegramLoginCodes).where(eq(telegramLoginCodes.codeHash, input.codeHash)).limit(1))[0];
+  if (!record || record.expiresAt <= now) return { status: "expired" as const };
+  if (record.confirmedAt) {
+    return record.telegramId === input.telegramId ? { status: "confirmed" as const, record } : { status: "used" as const };
+  }
+  await db.update(telegramLoginCodes).set({
+    telegramId: input.telegramId,
+    telegramName: input.telegramName,
+    telegramUsername: input.telegramUsername ?? null,
+    confirmedAt: now,
+  }).where(and(eq(telegramLoginCodes.id, record.id), sql`${telegramLoginCodes.confirmedAt} IS NULL`));
+  const confirmed = (await db.select().from(telegramLoginCodes).where(eq(telegramLoginCodes.id, record.id)).limit(1))[0];
+  if (!confirmed?.confirmedAt || confirmed.telegramId !== input.telegramId) return { status: "used" as const };
+  return { status: "confirmed" as const, record: confirmed };
+}
+
+/** Atomically consumes a confirmed code; a poll token is required so the typed code alone cannot create a browser session. */
+export async function consumeConfirmedTelegramLoginCode(pollTokenHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const now = new Date();
+  const record = (await db.select().from(telegramLoginCodes).where(eq(telegramLoginCodes.pollTokenHash, pollTokenHash)).limit(1))[0];
+  if (!record || record.expiresAt <= now || !record.confirmedAt || record.consumedAt || !record.telegramId || !record.telegramName) return undefined;
+  const result = await db.update(telegramLoginCodes).set({ consumedAt: now }).where(and(
+    eq(telegramLoginCodes.id, record.id),
+    sql`${telegramLoginCodes.consumedAt} IS NULL`,
+    sql`${telegramLoginCodes.expiresAt} > ${now}`,
+  ));
+  const affectedRows = Number(
+    (result as unknown as { affectedRows?: number }).affectedRows
+    ?? (result as unknown as Array<{ affectedRows?: number }>)[0]?.affectedRows
+    ?? 0,
+  );
+  if (affectedRows !== 1) return undefined;
+  return record;
+}
+
+export async function getTelegramLoginCodePollStatus(pollTokenHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const record = (await db.select().from(telegramLoginCodes).where(eq(telegramLoginCodes.pollTokenHash, pollTokenHash)).limit(1))[0];
+  if (!record) return "invalid" as const;
+  if (record.expiresAt <= new Date()) return "expired" as const;
+  if (record.consumedAt) return "consumed" as const;
+  if (!record.confirmedAt) return "pending" as const;
+  return "confirmed" as const;
 }
 
 export type EnsureTelegramGroupInput = {

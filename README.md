@@ -116,6 +116,10 @@ After deployment, the existing project owner should sign in through the owner fa
 
 Other group administrators sign in with Telegram. To make a managed group appear in their personal dashboard, they should send `/status`, `/memory on`, `/memory off`, or a `/retention` command in that group. GroupMemory first confirms the sender’s live Telegram administrator status, then records the dashboard grant. At every dashboard refresh, it rechecks that administrator status. A user who is no longer an administrator no longer sees that group.
 
+### One-time bot-code fallback
+
+If the Telegram Login approval callback is unavailable, choose **Link through Telegram bot** on the sign-in screen or owner-link panel. The dashboard creates a high-entropy one-time code and opens the bot deep link. Telegram sends `/start GM-…` in a private chat; GroupMemory binds the code to that exact Telegram sender, then the original browser session completes the sign-in automatically. Codes expire after ten minutes, are stored only as hashes, and can be consumed once. Do not forward the displayed code or the browser page while it is waiting for confirmation.
+
 ## Deploy on Vercel
 
 Vercel is suitable for this request-driven webhook server. The included `vercel.json` builds the React client, exposes `api/index.ts` as the Express function, and schedules hourly cleanup.
@@ -178,6 +182,7 @@ Use the complete [production go-live checklist](docs/production-checklist.md) be
 | Dashboard shows no groups | Sign in with Telegram, then send `/status` in the group as a current administrator. Check that the bot is still in the group and can use `getChatMember`. |
 | Owner console is present but personal groups are missing | Use the owner fallback once, then select **Link Telegram account** and complete Telegram Login. |
 | Telegram Login returns an error | Confirm that BotFather contains the exact deployed callback URL and that `TELEGRAM_OIDC_CLIENT_ID` and `TELEGRAM_OIDC_CLIENT_SECRET` match the BotFather configuration. |
+| Telegram Login approval does not return to the dashboard | Choose **Link through Telegram bot**, open the generated bot link, and complete the private `/start GM-…` prompt. Return to the same browser tab until it confirms the link. |
 | Webhook errors or pending updates grow | Check `/api/health`, check `getWebhookInfo`, and confirm the deployed domain is HTTPS. |
 | Answers say evidence is insufficient | This is intentional when retained messages do not directly answer the question. |
 | Cleanup does not run | Verify `CRON_SECRET` matches on the scheduler and web service, then manually call the retention endpoint. |

@@ -5,6 +5,7 @@ import { classifyGroupMemoryIntent, formatCasualAcknowledgement, type GroupMemor
 import { extractMessageMetadata } from "./metadata";
 import { answerGroupQuestion, buildDeleteCallbackData, buildSourceCallbackData, formatGroupSearch, formatSourceDetails, parseDeleteCallbackData, parseSourceCallbackData } from "./search";
 import { answerTelegramCallback, clearTelegramInlineKeyboard, deleteTelegramMessage, getTelegramBotUsername, isTelegramGroupAdmin, isVerifiedTelegramWebhook, sendTelegramHtmlMessage } from "./telegram";
+import { confirmTelegramBotCodeLogin } from "../telegram-code-login";
 import type { TelegramUpdate } from "./types";
 
 export async function resolveUserQuery(message: NonNullable<TelegramUpdate["message"]>) {
@@ -115,6 +116,30 @@ export async function processTelegramUpdate(update: TelegramUpdate) {
   if (!message) return;
   const command = parseBotCommand(message.text);
   if (command?.command === "start") {
+    if (message.chat.type === "private" && message.from && command.argument) {
+      const senderName = [message.from.first_name, message.from.last_name].filter(Boolean).join(" ").trim() || `Telegram user ${message.from.id}`;
+      const confirmation = await confirmTelegramBotCodeLogin(command.argument, {
+        telegramId: message.from.id,
+        name: senderName,
+        username: message.from.username ?? null,
+      });
+      if (confirmation.status === "confirmed") {
+        await sendTelegramHtmlMessage(
+          message.chat.id,
+          "<b>Dashboard linked</b>\nReturn to GroupMemory in your browser. This one-time code works only for the Telegram account that opened it.",
+          message.message_id,
+        );
+        return;
+      }
+      if (confirmation.status === "used") {
+        await sendTelegramHtmlMessage(message.chat.id, "<b>Code already used</b>\nThis dashboard link was confirmed by a different Telegram account. Create a new code in the dashboard if you need to sign in.", message.message_id);
+        return;
+      }
+      if (confirmation.status === "expired" || confirmation.status === "invalid") {
+        await sendTelegramHtmlMessage(message.chat.id, "<b>Link code expired or invalid</b>\nCreate a fresh Telegram link code in the GroupMemory dashboard, then open its new link here.", message.message_id);
+        return;
+      }
+    }
     await sendTelegramHtmlMessage(message.chat.id, formatStartMessage(message.chat.type), message.message_id);
     return;
   }

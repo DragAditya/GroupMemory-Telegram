@@ -26,6 +26,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import TelegramBotCodeLink from "./TelegramBotCodeLink";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Operations", path: "/" },
@@ -77,6 +78,10 @@ export default function DashboardLayout({
           <Button onClick={() => startLogin()} variant="ghost" size="sm">
             Project owner fallback
           </Button>
+          <div className="w-full border-t border-border pt-4 text-left">
+            <p className="mb-2 text-xs leading-5 text-muted-foreground">If Telegram Login is unavailable, confirm your identity through a one-time bot code instead.</p>
+            <TelegramBotCodeLink />
+          </div>
         </div>
       </div>
     );
