@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `isProjectOwner` boolean DEFAULT false NOT NULL;

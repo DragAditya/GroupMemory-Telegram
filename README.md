@@ -1,0 +1,184 @@
+# GroupMemory
+
+**GroupMemory** is a Telegram bot that gives large groups a private, searchable memory. It records message metadata, stores Gemini embeddings, retrieves only relevant evidence, and answers with the original Telegram sources.
+
+The project includes a small **owner-only dashboard**. It shows the bot identity, webhook state, add-to-group link, active groups, message counts, retention settings, and the most recent Telegram delivery note.
+
+> **Privacy model:** GroupMemory stores only messages from groups where memory has been enabled. Each group independently controls retention. Answer generation receives retrieved evidence only and is instructed to say when evidence is insufficient.
+
+## What it does
+
+| Capability | Behavior |
+| --- | --- |
+| Message memory | Records text, sender, username, UTC time, replies, links, media IDs, mentions, topics, and original Telegram links. |
+| Strict retention | Each group chooses **7, 30, or 90 days**. Expired records are deleted in bounded batches. |
+| Semantic search | Creates 768-dimension Gemini embeddings and uses TiDB vector similarity search. |
+| Grounded answers | `/ask`, `/search`, and bot mentions return named, dated source messages and Telegram links. |
+| Admin controls | Only Telegram group admins can enable/disable memory or change retention. |
+| Operations dashboard | Restricted to the configured project owner, with direct Telegram add-to-group and profile links. |
+
+## Architecture
+
+```text
+Telegram group message
+        │ HTTPS webhook
+        ▼
+Express API ──► TiDB / MySQL metadata + vector records
+        │                         │
+        │                         ▼
+        │                   vector similarity search
+        ▼
+Google Gemini ──► evidence-only answer ──► Telegram reply with sources
+```
+
+## Bot commands
+
+| Command | Who can use it | Result |
+| --- | --- | --- |
+| `/start` | Anyone | Shows setup and command help. |
+| `/memory on` | Group admin | Starts recording messages for the current group. |
+| `/memory off` | Group admin | Stops future recording for the current group. |
+| `/retention 7d` | Group admin | Keeps messages for seven days. |
+| `/retention 30d` | Group admin | Keeps messages for thirty days; this is the default. |
+| `/retention 90d` | Group admin | Keeps messages for ninety days. |
+| `/status` | Group admin | Shows the group’s memory and retention settings. |
+| `/ask <question>` | Anyone in a configured group | Answers from retained evidence only. |
+| `/search <query>` | Anyone in a configured group | Returns matching retained messages and links. |
+| `@BotUsername <question>` | Anyone in a configured group | Treats a bot mention as an evidence-only question. |
+
+## Local setup
+
+### Requirements
+
+Install **Node.js 22+**, **pnpm 10+**, and a TiDB/MySQL-compatible database. TiDB is recommended because the schema uses `VECTOR(768)` and vector similarity functions.
+
+```bash
+git clone https://github.com/YOUR-ACCOUNT/groupmemory.git
+cd groupmemory
+pnpm install --frozen-lockfile
+```
+
+Create a local uncommitted `.env` file from the values in [the environment variable reference](docs/environment-template.md). Fill in every required value, then create the database tables:
+
+```bash
+pnpm drizzle-kit generate
+pnpm drizzle-kit migrate
+pnpm dev
+```
+
+The local dashboard opens at `http://localhost:3000`. The health check is available at `GET /api/health`.
+
+## Required environment variables
+
+| Variable | Purpose | Required |
+| --- | --- | --- |
+| `DATABASE_URL` | TiDB/MySQL connection string. | Yes |
+| `JWT_SECRET` | Signs the dashboard session cookie. Use a random 32+ character value. | Yes |
+| `VITE_APP_ID`, `VITE_OAUTH_PORTAL_URL`, `OAUTH_SERVER_URL` | Manus OAuth configuration for dashboard login. | Yes |
+| `OWNER_OPEN_ID` | The only Manus account allowed into the owner dashboard. | Yes |
+| `TELEGRAM_BOT_TOKEN` | Token from BotFather. Never expose this in the browser or commit it. | Yes |
+| `TELEGRAM_WEBHOOK_SECRET` | Secret Telegram sends in the webhook header. | Yes |
+| `GEMINI_API_KEY` | Google Gemini API key for embeddings and grounded generation. | Yes |
+| `GEMINI_GENERATION_MODEL` | Gemini generation model available to your Google API project. | Yes |
+| `CRON_SECRET` | Shared secret for Vercel, Render, or another external retention scheduler. | Yes outside Manus hosting |
+| `RETENTION_CRON_URL` | Full cleanup URL used only by the Render cron service. | Render only |
+
+## Telegram setup
+
+1. Create a bot with **BotFather** and copy its token into `TELEGRAM_BOT_TOKEN`.
+2. In BotFather, open **Bot Settings → Group Privacy → Turn off**. GroupMemory cannot index normal group messages while privacy mode is on.
+3. In BotFather, add the command list from the table above if you want Telegram’s command menu.
+4. Deploy the app to a public HTTPS URL.
+5. Set the webhook. Replace the two placeholders, but do not paste your bot token or secret into a public terminal history:
+
+```bash
+curl -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
+  -H "content-type: application/json" \
+  --data "{\"url\":\"https://YOUR-DOMAIN/api/telegram/webhook\",\"secret_token\":\"${TELEGRAM_WEBHOOK_SECRET}\",\"allowed_updates\":[\"message\",\"edited_message\"]}"
+```
+
+6. Confirm the connection:
+
+```bash
+curl "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo"
+```
+
+7. Open the owner dashboard, select **Add bot to a group**, choose the group, make the bot a group admin, and send `/memory on` in that group.
+
+## Deploy on Vercel
+
+Vercel is suitable for this request-driven webhook server. The included `vercel.json` builds the React client, exposes `api/index.ts` as the Express function, and schedules hourly cleanup.
+
+1. Push this repository to GitHub and import it in Vercel.
+2. Add every required environment variable from [the environment variable reference](docs/environment-template.md) in **Project Settings → Environment Variables**.
+3. Set a strong `CRON_SECRET`. Vercel sends it as `Authorization: Bearer <CRON_SECRET>` when running the configured cron route.[1]
+4. Deploy. Use the resulting production URL when registering the Telegram webhook.
+5. Open **Settings → Cron Jobs** to confirm `/api/scheduled/groupmemory-retention` runs at `0 * * * *` (UTC).[2]
+
+> Vercel Cron invokes the production URL with an HTTP `GET`; GroupMemory accepts both `GET` and `POST` for its authenticated retention path. Vercel cron schedules and their timezone are configured in `vercel.json`.[2]
+
+> **Vercel tradeoff:** Vercel Cron only runs against production deployments, uses UTC schedules, and is a request-triggered scheduler rather than a continuously running worker. Its `CRON_SECRET` protects the cleanup request, but Vercel does not provide a shared persistent process for retries or long-lived queues. For GroupMemory’s bounded hourly cleanup this is suitable; use Render or another dedicated job host if you need more control over scheduling, retries, or job runtime.[1] [2]
+
+## Deploy on Render
+
+Render is a good fit when you prefer a standard Node web service plus a separate scheduled service. The included `render.yaml` declares both.
+
+1. In Render, choose **New → Blueprint** and connect this GitHub repository.
+2. Enter all fields marked `sync: false` from [the environment variable reference](docs/environment-template.md).
+3. Set `RETENTION_CRON_URL` on the `groupmemory-retention` cron service to `https://YOUR-RENDER-DOMAIN/api/scheduled/groupmemory-retention`.
+4. Set the **same** `CRON_SECRET` value on both the web service and the cron service.
+5. Deploy the web service, then register its HTTPS URL with Telegram.
+6. Use **Trigger Run** in the Render dashboard to test cleanup. The cron job runs hourly at `0 * * * *` in UTC.[3]
+
+Render cron jobs run separately from the web service, support environment variables, and run one instance of a given cron job at a time.[3]
+
+## Retention scheduler for other hosts
+
+Any scheduler can call the cleanup endpoint. Send the bearer token as shown below:
+
+```bash
+curl -X POST "https://YOUR-DOMAIN/api/scheduled/groupmemory-retention" \
+  -H "Authorization: Bearer ${CRON_SECRET}"
+```
+
+Schedule it hourly. The endpoint deletes in bounded batches and returns JSON with the deleted count.
+
+## Security and operations
+
+- Keep `.env` private. It is ignored by Git and must never be committed.
+- Rotate the Telegram token, webhook secret, Gemini key, or cron secret immediately if any is exposed.
+- Use a TLS-enabled database connection in production.
+- The dashboard checks both the authenticated admin role and a durable project-owner flag. Other admins cannot access it.
+- The webhook checks Telegram’s secret header before processing any update.
+- Review the dashboard’s **Latest Telegram delivery note** and Telegram’s `getWebhookInfo` output if messages stop arriving.
+
+## Production checklist
+
+Use the complete [production go-live checklist](docs/production-checklist.md) before connecting a real Telegram group. It covers migrations, secret configuration, HTTPS health checks, webhook registration, owner dashboard access, and retention-job verification.
+
+## Troubleshooting
+
+| Problem | What to check |
+| --- | --- |
+| Bot receives only commands or mentions | Turn **Group Privacy** off in BotFather, remove and re-add the bot if Telegram asks. |
+| `/memory on` says admin-only | Make the person who sends it a Telegram group administrator. |
+| Dashboard refuses access | Sign in with the Manus account matching `OWNER_OPEN_ID`. |
+| Webhook errors or pending updates grow | Check `/api/health`, check `getWebhookInfo`, and confirm the deployed domain is HTTPS. |
+| Answers say evidence is insufficient | This is intentional when retained messages do not directly answer the question. |
+| Cleanup does not run | Verify `CRON_SECRET` matches on the scheduler and web service, then manually call the retention endpoint. |
+
+## Verification
+
+```bash
+pnpm check
+pnpm test
+pnpm build
+```
+
+## References
+
+[1] [Vercel: securing cron jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs)  
+[2] [Vercel: cron jobs](https://vercel.com/docs/cron-jobs)  
+[3] [Render: cron jobs](https://render.com/docs/cronjobs)  
+[4] [Telegram Bot API](https://core.telegram.org/bots/api)  
+[5] [Google Gemini embeddings](https://ai.google.dev/gemini-api/docs/embeddings)

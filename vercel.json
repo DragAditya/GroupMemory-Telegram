@@ -1,0 +1,14 @@
+{
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build && cp -R dist/public/. public/",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.ts": { "maxDuration": 60 }
+  },
+  "crons": [
+    {
+      "path": "/api/scheduled/groupmemory-retention",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

@@ -25,4 +25,18 @@
 - [x] Validate owner OAuth return flow on the production dashboard URL.
 - [x] Verify that the authenticated owner dashboard loads after the production OAuth callback.
 - [x] Capture live authenticated owner-dashboard rendering evidence after the production OAuth callback.
-- [ ] Correct the live dashboard’s owner identity check so the authenticated project owner is authorized.
+- [x] Correct the live dashboard’s owner identity check so the authenticated project owner is authorized.
+- [x] Create a comprehensive README covering local setup, Telegram configuration, Gemini, database schema, security, operations, and troubleshooting.
+- [x] Add Vercel deployment configuration and explain its scheduled-cleanup limitation.
+- [x] Add Render deployment configuration for the webhook server and a compatible retention-cleanup schedule.
+- [x] Add a safe environment-variable template and production deployment checklist.
+- [x] Document Vercel-specific retention scheduling tradeoffs and limitations for GroupMemory.
+- [x] Add a dedicated production deployment checklist covering database, secrets, webhook, cron, owner login, and health verification.
+- [ ] Publish the documented GroupMemory source to a private GitHub repository.
+- [x] Show the bot username, Telegram profile link, webhook status, and live connection details in the owner dashboard.
+- [x] Add a clear dashboard action that opens Telegram’s add-to-group flow for the bot.
+- [x] Add a guided post-add checklist for making the bot an admin, disabling privacy mode, and enabling memory.
+- [x] Refine the mobile dashboard layout so the new setup controls remain easy to use.
+- [x] Reinstate strict owner-only dashboard authorization using the project owner identity.
+- [x] Add tests proving the project owner is allowed and a different admin is rejected.
+- [ ] Re-verify the live owner dashboard after restoring strict owner-only access.

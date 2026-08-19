@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: groupmemory
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: VITE_APP_ID
+        sync: false
+      - key: VITE_OAUTH_PORTAL_URL
+        sync: false
+      - key: OAUTH_SERVER_URL
+        sync: false
+      - key: OWNER_OPEN_ID
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+  - type: cron
+    name: groupmemory-retention
+    runtime: node
+    schedule: 0 * * * *
+    buildCommand: pnpm install --frozen-lockfile
+    startCommand: pnpm retention:run
+    envVars:
+      - key: RETENTION_CRON_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false

@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "retention:run": "node scripts/run-retention-cron.mjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
