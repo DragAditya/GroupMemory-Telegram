@@ -5,6 +5,7 @@ import {
   InsertUser,
   systemJobs,
   telegramGroups,
+  userGroupAccess,
   users,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -97,6 +98,110 @@ export async function getUserByOpenId(openId: string) {
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByTelegramId(telegramId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get user: database not available");
+    return undefined;
+  }
+  const result = await db.select().from(users).where(eq(users.telegramId, telegramId)).limit(1);
+  return result[0];
+}
+
+export type TelegramDashboardUserInput = {
+  telegramId: number;
+  name: string;
+  username?: string | null;
+};
+
+/** Creates a safe provisional dashboard account only for an already verified Telegram identity. */
+export async function upsertTelegramDashboardUser(input: TelegramDashboardUserInput) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+
+  const existing = await getUserByTelegramId(input.telegramId);
+  const values = {
+    name: input.name,
+    telegramUsername: input.username ?? null,
+    loginMethod: "telegram",
+    lastSignedIn: new Date(),
+  };
+
+  if (existing) {
+    await db.update(users).set(values).where(eq(users.id, existing.id));
+    return getUserByTelegramId(input.telegramId);
+  }
+
+  await db.insert(users).values({
+    openId: `telegram:${input.telegramId}`,
+    telegramId: input.telegramId,
+    ...values,
+  });
+  return getUserByTelegramId(input.telegramId);
+}
+
+/** Links a Telegram identity to the existing owner account, merging its verified group grants. */
+export async function linkTelegramIdentityToProjectOwner(
+  ownerOpenId: string,
+  identity: TelegramDashboardUserInput,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const owner = await getUserByOpenId(ownerOpenId);
+  if (!owner?.isProjectOwner) throw new Error("Project owner record was not found");
+
+  const existingTelegramUser = await getUserByTelegramId(identity.telegramId);
+  if (existingTelegramUser && existingTelegramUser.id !== owner.id) {
+    await db.execute(sql`
+      INSERT IGNORE INTO user_group_access (userId, groupId, grantedAt, lastVerifiedAt)
+      SELECT ${owner.id}, groupId, grantedAt, lastVerifiedAt
+      FROM user_group_access
+      WHERE userId = ${existingTelegramUser.id}
+    `);
+    await db.delete(users).where(eq(users.id, existingTelegramUser.id));
+  }
+
+  await db
+    .update(users)
+    .set({
+      telegramId: identity.telegramId,
+      telegramUsername: identity.username ?? null,
+      name: identity.name,
+      loginMethod: "telegram",
+      lastSignedIn: new Date(),
+    })
+    .where(eq(users.id, owner.id));
+  return getUserByOpenId(ownerOpenId);
+}
+
+/** Persists a dashboard grant only after a live Telegram group-admin check has succeeded. */
+export async function recordVerifiedUserGroupAccess(
+  identity: TelegramDashboardUserInput,
+  groupId: number,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const user = await upsertTelegramDashboardUser(identity);
+  if (!user) throw new Error("Telegram dashboard user was not created");
+  const now = new Date();
+  await db.insert(userGroupAccess).values({ userId: user.id, groupId, grantedAt: now, lastVerifiedAt: now }).onDuplicateKeyUpdate({
+    set: { lastVerifiedAt: now },
+  });
+  return user;
+}
+
+export async function removeUserGroupAccess(userId: number, groupId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.delete(userGroupAccess).where(and(eq(userGroupAccess.userId, userId), eq(userGroupAccess.groupId, groupId)));
+}
+
+export async function markUserGroupAccessVerified(userId: number, groupId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  await db.update(userGroupAccess).set({ lastVerifiedAt: new Date() }).where(and(eq(userGroupAccess.userId, userId), eq(userGroupAccess.groupId, groupId)));
 }
 
 export type EnsureTelegramGroupInput = {
@@ -328,6 +433,65 @@ export async function getGroupDashboardStatuses() {
     lastActivityAt: Date | string | null;
     messageCount: number | string;
   }>;
+}
+
+export async function getUserDashboardGroups(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const result = await db.execute(sql`
+    SELECT
+      g.id, g.telegramChatId, g.title, g.username, g.memoryEnabled, g.retentionDays, g.lastActivityAt,
+      a.lastVerifiedAt,
+      COUNT(m.id) AS messageCount
+    FROM user_group_access a
+    INNER JOIN telegram_groups g ON g.id = a.groupId
+    LEFT JOIN group_messages m ON m.groupId = g.id
+    WHERE a.userId = ${userId}
+    GROUP BY g.id, g.telegramChatId, g.title, g.username, g.memoryEnabled, g.retentionDays, g.lastActivityAt, a.lastVerifiedAt
+    ORDER BY g.lastActivityAt DESC
+  `);
+  return result[0] as unknown as Array<{
+    id: number;
+    telegramChatId: number;
+    title: string | null;
+    username: string | null;
+    memoryEnabled: boolean | number;
+    retentionDays: number;
+    lastActivityAt: Date | string | null;
+    lastVerifiedAt: Date | string;
+    messageCount: number | string;
+  }>;
+}
+
+export async function getUserDashboardAccesses(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  return db
+    .select({ groupId: userGroupAccess.groupId, telegramChatId: telegramGroups.telegramChatId })
+    .from(userGroupAccess)
+    .innerJoin(telegramGroups, eq(userGroupAccess.groupId, telegramGroups.id))
+    .where(eq(userGroupAccess.userId, userId));
+}
+
+export async function getOwnerPlatformMetrics() {
+  const db = await getDb();
+  if (!db) throw new Error("Database is unavailable");
+  const result = await db.execute(sql`
+    SELECT
+      COUNT(DISTINCT g.id) AS groupCount,
+      COUNT(m.id) AS retainedMessageCount,
+      COUNT(DISTINCT CASE WHEN g.memoryEnabled = 1 THEN g.id END) AS memoryEnabledGroupCount,
+      COUNT(DISTINCT CASE WHEN g.lastActivityAt >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY) THEN g.id END) AS activeGroupCount
+    FROM telegram_groups g
+    LEFT JOIN group_messages m ON m.groupId = g.id
+  `);
+  const row = (result[0] as unknown as Array<Record<string, unknown>>)[0] ?? {};
+  return {
+    groupCount: Number(row.groupCount ?? 0),
+    retainedMessageCount: Number(row.retainedMessageCount ?? 0),
+    memoryEnabledGroupCount: Number(row.memoryEnabledGroupCount ?? 0),
+    activeGroupCount: Number(row.activeGroupCount ?? 0),
+  };
 }
 
 export async function upsertSystemJob(jobKey: string, scheduleCronTaskUid: string) {

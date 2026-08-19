@@ -42,12 +42,15 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  /** Verified Telegram OIDC subject. Nullable for existing Manus-only accounts. */
+  telegramId: bigint("telegramId", { mode: "number" }),
+  telegramUsername: varchar("telegramUsername", { length: 128 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   isProjectOwner: boolean("isProjectOwner").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-});
+}, table => [uniqueIndex("users_telegram_id_unique").on(table.telegramId)]);
 
 export const telegramGroups = mysqlTable(
   "telegram_groups",
@@ -97,6 +100,27 @@ export const groupMessages = mysqlTable(
   ],
 );
 
+/** A dashboard grant observed only after Telegram confirms the person is a current group administrator. */
+export const userGroupAccess = mysqlTable(
+  "user_group_access",
+  {
+    id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    groupId: bigint("groupId", { mode: "number" })
+      .notNull()
+      .references(() => telegramGroups.id, { onDelete: "cascade" }),
+    grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+    lastVerifiedAt: timestamp("lastVerifiedAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("user_group_access_user_group_unique").on(table.userId, table.groupId),
+    index("user_group_access_user_verified_idx").on(table.userId, table.lastVerifiedAt),
+    index("user_group_access_group_idx").on(table.groupId),
+  ],
+);
+
 export const systemJobs = mysqlTable("system_jobs", {
   id: int("id").autoincrement().primaryKey(),
   jobKey: varchar("jobKey", { length: 64 }).notNull().unique(),
@@ -111,3 +135,4 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type TelegramGroup = typeof telegramGroups.$inferSelect;
 export type GroupMessage = typeof groupMessages.$inferSelect;
+export type UserGroupAccess = typeof userGroupAccess.$inferSelect;

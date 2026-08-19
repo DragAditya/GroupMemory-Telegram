@@ -53,6 +53,25 @@
 - [x] Format evidence timestamps in India Standard Time.
 - [x] Add safe inline delete controls for the answer requester and group admins.
 - [x] Add tests for intent routing, exact statistics, IST source formatting, and delete authorization.
+- [x] Audit and document the current product gaps for a multi-user GroupMemory platform.
+- [x] Implement secure Telegram Login for dashboard users with verified Telegram identity binding.
+- [x] Persist per-user access to only the Telegram groups they administer.
+- [x] Build a personal dashboard showing only each user’s own group settings, activity, retention, and message statistics.
+- [x] Create a separate owner-only admin console with cross-group operational views and global statistics.
+- [x] Add authorization, tenancy-isolation, and analytics tests for the multi-user dashboard.
 - [x] Replace repetitive Telegram source lists with compact source access from each answer.
 - [x] Improve Telegram answer hierarchy, evidence labels, and human-readable source timestamps.
 - [x] Add tests for concise answer formatting and source access behavior.
+- [x] Implement signed Telegram OIDC state, PKCE, code exchange, JWKS ID-token validation, and secure session issuance.
+- [x] Add a one-time owner Telegram-account linking flow guarded by the existing project-owner session.
+- [x] Add Telegram identity and verified user-group access tables, generate a migration, and apply it safely.
+- [x] Record and refresh verified group-admin access without granting access from unverified Telegram events.
+- [x] Split dashboard procedures into tenant-scoped personal data and strict owner-only platform analytics.
+- [x] Replace automatic Manus-only dashboard sign-in with a Telegram-first dashboard entry and an owner fallback.
+- [x] Add unit coverage for OIDC validation, owner linking, access isolation, live-admin revocation, and global metrics authorization.
+- [x] Correct owner global metrics so group-level counts are not inflated by joined message rows.
+- [x] Keep a verified group grant for retry after a Telegram API outage while excluding it from that dashboard response.
+- [x] MAC-protect the Telegram OIDC state cookie and reject any callback with altered intent, owner-link identity, verifier, or return path metadata.
+- [x] Add route-level Telegram OIDC callback tests for tampered state rejection and owner-link identity binding.
+- [x] Add automated live-admin revocation and owner global-metrics aggregation regression tests.
+- [x] Remove the deprecated `maxAge` option when clearing the one-time Telegram OIDC state cookie.

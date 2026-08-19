@@ -29,3 +29,10 @@ export const startLogin = () => {
 
   window.location.href = url.toString();
 };
+
+/** Starts the server-managed Telegram OIDC flow with state and PKCE protection. */
+export const startTelegramLogin = (returnTo = `${window.location.pathname}${window.location.search}`) => {
+  const url = new URL("/api/auth/telegram/login", window.location.origin);
+  url.searchParams.set("returnTo", returnTo.startsWith("/") ? returnTo : "/");
+  window.location.href = url.toString();
+};

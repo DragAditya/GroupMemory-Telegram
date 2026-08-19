@@ -6,6 +6,7 @@ import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import { processTelegramUpdate, verifyTelegramWebhook } from "./groupmemory/webhook";
 import { handleRetentionCleanup } from "./groupmemory/retention";
+import { registerTelegramOidcRoutes } from "./telegram-oidc";
 
 export function createGroupMemoryApp() {
   const app = express();
@@ -13,6 +14,7 @@ export function createGroupMemoryApp() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  registerTelegramOidcRoutes(app);
   app.get("/api/health", (_req, res) => res.status(200).json({ ok: true, service: "groupmemory" }));
   app.post("/api/telegram/webhook", async (req, res) => {
     if (!verifyTelegramWebhook(req.header("x-telegram-bot-api-secret-token"))) {

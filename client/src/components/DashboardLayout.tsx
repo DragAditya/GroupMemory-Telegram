@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { startLogin } from "@/const";
+import { startLogin, startTelegramLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Bot, LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -64,15 +64,18 @@ export default function DashboardLayout({
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Sign in securely with your Telegram account to view only the groups you administer.
             </p>
           </div>
           <Button
-            onClick={() => startLogin()}
+            onClick={() => startTelegramLogin()}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            Sign in with Telegram
+          </Button>
+          <Button onClick={() => startLogin()} variant="ghost" size="sm">
+            Project owner fallback
           </Button>
         </div>
       </div>
@@ -212,7 +215,7 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
+                      {user?.telegramUsername ? `@${user.telegramUsername}` : user?.email || "Telegram dashboard"}
                     </p>
                   </div>
                 </button>

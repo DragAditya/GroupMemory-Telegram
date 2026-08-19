@@ -1,4 +1,4 @@
-import { setGroupMemoryEnabled, setGroupRetentionDays } from "../db";
+import { recordVerifiedUserGroupAccess, setGroupMemoryEnabled, setGroupRetentionDays } from "../db";
 import { isTelegramGroupAdmin, sendTelegramHtmlMessage } from "./telegram";
 import type { TelegramMessage } from "./types";
 
@@ -53,6 +53,17 @@ export async function handleControlCommand(message: TelegramMessage, group: { id
       message.message_id,
     );
     return true;
+  }
+
+  const senderName = [message.from.first_name, message.from.last_name].filter(Boolean).join(" ").trim() || `Telegram user ${message.from.id}`;
+  try {
+    await recordVerifiedUserGroupAccess(
+      { telegramId: message.from.id, name: senderName, username: message.from.username ?? null },
+      group.id,
+    );
+  } catch (error) {
+    // Do not block a legitimate in-chat admin command if dashboard synchronization is temporarily unavailable.
+    console.error("[GroupMemory] Failed to synchronize verified dashboard group access", error);
   }
 
   if (parsed.command === "memory") {
